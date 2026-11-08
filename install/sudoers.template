@@ -1,0 +1,3 @@
+# Installed to /etc/sudoers.d/usb-viewer by install/install.sh.
+# Lets the kiosk user run only the two mount helpers without a password.
+@USER@ ALL=(root) NOPASSWD: /usr/local/bin/usb-viewer-mount, /usr/local/bin/usb-viewer-umount

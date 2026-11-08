@@ -1,0 +1,32 @@
+#!/bin/bash
+# Lazily unmounts a mountpoint created by usb-viewer-mount and removes the
+# directory. Works even when the stick was already pulled out.
+#   usb-viewer-umount /media/usb-viewer/sda1   one mountpoint
+#   usb-viewer-umount --all                    everything left under /media/usb-viewer
+set -euo pipefail
+
+MOUNT_BASE="/media/usb-viewer"
+
+release() {
+    local mountpoint="$1"
+    if findmnt -n "$mountpoint" >/dev/null 2>&1; then
+        umount -l "$mountpoint"
+    fi
+    rmdir "$mountpoint" 2>/dev/null || true
+}
+
+target="${1:-}"
+if [[ "$target" == "--all" ]]; then
+    for entry in "$MOUNT_BASE"/*; do
+        [[ -d "$entry" ]] || continue
+        [[ "$entry" =~ ^/media/usb-viewer/sd[a-z]+[0-9]*$ ]] || continue
+        release "$entry"
+    done
+    exit 0
+fi
+
+if [[ ! "$target" =~ ^/media/usb-viewer/sd[a-z]+[0-9]*$ ]]; then
+    echo "usb-viewer-umount: invalid mountpoint: '$target'" >&2
+    exit 2
+fi
+release "$target"

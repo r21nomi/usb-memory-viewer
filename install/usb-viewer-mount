@@ -1,0 +1,52 @@
+#!/bin/bash
+# Mounts one USB partition read-only under /media/usb-viewer and prints the
+# mountpoint. Runs as root via sudo (see install/sudoers). Only plain
+# /dev/sdXN device nodes are accepted so the viewer cannot mount anything else.
+set -euo pipefail
+
+MOUNT_BASE="/media/usb-viewer"
+BASE_OPTS="ro,nosuid,nodev,noexec"
+
+device="${1:-}"
+if [[ ! "$device" =~ ^/dev/sd[a-z]+[0-9]*$ ]]; then
+    echo "usb-viewer-mount: invalid device: '$device'" >&2
+    exit 2
+fi
+if [[ ! -b "$device" ]]; then
+    echo "usb-viewer-mount: not a block device: $device" >&2
+    exit 2
+fi
+
+name="${device#/dev/}"
+mountpoint="$MOUNT_BASE/$name"
+mkdir -p "$mountpoint"
+
+# A stale mount can remain if the previous stick was yanked; clear it first.
+if findmnt -n "$mountpoint" >/dev/null 2>&1; then
+    umount -l "$mountpoint" || true
+fi
+
+# Only well-known filesystems are mounted; anything else is refused rather
+# than handed to an obscure kernel driver as root.
+fstype="$(blkid -o value -s TYPE "$device" 2>/dev/null || true)"
+case "$fstype" in
+    vfat)            opts="$BASE_OPTS,utf8=1,shortname=mixed" ;;
+    exfat)           opts="$BASE_OPTS,iocharset=utf8" ;;
+    ntfs)            opts="$BASE_OPTS" ;;
+    ext2|ext3|ext4)  opts="$BASE_OPTS,noload" ;;  # noload: no journal replay, truly read-only
+    "")
+        echo "usb-viewer-mount: no filesystem found on $device" >&2
+        rmdir "$mountpoint" 2>/dev/null || true
+        exit 3 ;;
+    *)
+        echo "usb-viewer-mount: unsupported filesystem '$fstype' on $device" >&2
+        rmdir "$mountpoint" 2>/dev/null || true
+        exit 3 ;;
+esac
+
+if ! mount -t "$fstype" -o "$opts" "$device" "$mountpoint"; then
+    rmdir "$mountpoint" 2>/dev/null || true
+    exit 4
+fi
+
+echo "$mountpoint"

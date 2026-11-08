@@ -1,0 +1,33 @@
+#!/bin/bash
+# Starts the viewer and restarts it if it ever crashes, so the kiosk never
+# stays blank. Stop it with: pkill -f 'python3 -m usb_viewer' (or log out).
+set -u
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RESTART_DELAY_SEC=2
+child=""
+
+# Forward SIGTERM/SIGINT to the viewer so it can close Chromium and unmount.
+forward() {
+    if [[ -n "$child" ]]; then
+        kill -TERM "$child" 2>/dev/null || true
+        wait "$child" 2>/dev/null || true
+    fi
+    exit 0
+}
+trap forward TERM INT HUP
+
+cd "$HERE" || exit 1
+while true; do
+    /usr/bin/python3 -m usb_viewer "$@" &
+    child=$!
+    wait "$child"
+    status=$?
+    child=""
+    # Exit code 2 means a configuration/browser problem; retrying will not help.
+    if [[ $status -eq 0 || $status -eq 2 ]]; then
+        exit "$status"
+    fi
+    echo "usb-viewer exited with status $status; restarting in ${RESTART_DELAY_SEC}s" >&2
+    sleep "$RESTART_DELAY_SEC"
+done

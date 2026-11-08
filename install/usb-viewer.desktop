@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=USB Viewer
+Comment=Show HTML works from a USB stick in fullscreen Chromium
+Exec=@INSTALL_DIR@/bin/usb-viewer
+Terminal=false
+X-GNOME-Autostart-enabled=true
+NoDisplay=true

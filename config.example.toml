@@ -1,0 +1,33 @@
+# usb-viewer 設定ファイル
+# インストール後は ~/.config/usb-viewer/config.toml を編集してください。
+# 変更後は再起動（またはログアウト→ログイン）で反映されます。
+
+# USBメモリ内で HTML を探すフォルダ（USBのルートからの相対パス）。
+# "" または "/" でルートフォルダ。例: "works" → USB:/works/ の中を探す。
+content_dir = ""
+
+# USBメモリが挿さっていないときに表示する HTML。
+# 好きなファイルに差し替え可能。"" にすると何も表示しない（黒画面）。
+default_html = "/opt/usb-viewer/default/index.html"
+
+# USB の抜き差しを確認する間隔（秒）
+poll_interval_sec = 0.5
+
+# ログの出力先（"" で標準エラー出力のみ）
+log_file = "~/.cache/usb-viewer/usb-viewer.log"
+
+[mount]
+# マウント用ヘルパー（install.sh が /usr/local/bin に配置します）
+mount_helper = "/usr/local/bin/usb-viewer-mount"
+umount_helper = "/usr/local/bin/usb-viewer-umount"
+
+[browser]
+# Chromium のコマンド名。Raspberry Pi OS Bookworm では "chromium"、
+# 古い OS では "chromium-browser"。見つからなければ自動で探します。
+command = "chromium"
+# Chromium に追加で渡す引数（必要なら）。例: ["--force-device-scale-factor=1"]
+extra_args = []
+# file:// で開いたページから他のローカルファイルを fetch() できるようにする。
+# JSON やシェーダーを読み込む作品に必要。ただし信頼できない USB を挿す運用なら
+# false にすること（ページから Pi 内のファイルも読めてしまうため）。
+allow_file_access_from_files = true
